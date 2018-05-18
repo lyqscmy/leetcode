@@ -43,6 +43,21 @@ def quickSort(A, p, r):
         quickSort(A, q + 1, r)
 
 
+def topk(A, p, r, k):
+    k0 = k - p
+    if k0 >= p and k <= r:
+        q = partition(A, p, r)
+        while q != k0:
+            if k < q:
+                r = q - 1
+            else:
+                p = q + 1
+            q = partition(A, p, r)
+        return A[q]
+    else:
+        return None
+
+
 def partition(A, p, r):
     x = A[r]
     i = p - 1
@@ -61,11 +76,11 @@ def partition(A, p, r):
 
 xs = list(range(100))
 random.shuffle(xs)
-ys = list(range(100))
 
-quickSort(xs, 0, len(xs) - 1)
-a = xs
-b = ys
+k = 4 # 0-based
+a = k
+b = topk(xs, 0, len(xs) - 1, k)
+
 try:
     assert a == b
 except:
