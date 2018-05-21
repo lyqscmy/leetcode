@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef struct Heap {
   int *data;
@@ -19,12 +20,10 @@ Heap *new_heap(int capacity) {
     return NULL;
   }
   int *data = malloc(sizeof(int) * capacity);
-  if (data == NULL) {
-    return NULL;
-  }
   Heap *heap = malloc(sizeof *heap);
-  if (heap == NULL) {
+  if (data == NULL || heap == NULL) {
     free(data);
+    free(heap);
     return NULL;
   }
   heap->data = data;
@@ -34,8 +33,10 @@ Heap *new_heap(int capacity) {
 }
 
 void free_heap(Heap *heap) {
-  free(heap->data);
-  free(heap);
+  if (heap != NULL) {
+    free(heap->data);
+    free(heap);
+  }
 }
 
 int sift_up(Heap *heap, int start, int pos) {
@@ -54,6 +55,7 @@ int sift_up(Heap *heap, int start, int pos) {
 }
 
 int sift_down_range(Heap *heap, int pos, int end) {
+  assert(pos >= 0 && pos < end);
   int elem = heap->data[pos];
   int child = 2 * pos + 1;
   while (child < end) {
@@ -79,6 +81,7 @@ void sift_down(Heap *heap, int pos) {
 
 void sift_down_bottom(Heap *heap, int pos) {
   int end = heap->length;
+  assert(pos >= 0 && pos < end);
   int start = pos;
   int elem = heap->data[pos];
   int child = 2 * pos + 1;
@@ -95,51 +98,70 @@ void sift_down_bottom(Heap *heap, int pos) {
   sift_up(heap, start, pos);
 }
 
-int pop(Heap *heap, int *item) {
+bool pop(Heap *heap, int *key) {
   if (heap->length == 0) {
-    return 1;
+    return false;
   }
 
-  *item = heap->data[heap->length - 1];
   heap->length -= 1;
+  *key = heap->data[heap->length];
   if (heap->length != 0) {
-    swap(item, heap->data);
+    swap(key, heap->data);
     sift_down_bottom(heap, 0);
   }
 
-  return 0;
+  return true;
 }
 
-int push(Heap *heap, int item) {
+bool push(Heap *heap, int key) {
   int old_len = heap->length;
   if (old_len == heap->capacity) {
-    return -1;
+    return false;
   }
 
-  heap->data[old_len] = item;
+  heap->data[old_len] = key;
   sift_up(heap, 0, old_len);
-  old_len += 1;
-  heap->length = old_len;
-  return old_len;
+  heap->length = old_len + 1;
+  return true;
 }
 
-int main() {
+void test_push() {
   Heap *heap = new_heap(5);
   push(heap, 3);
   push(heap, 1);
-  assert(heap->length == 2);
-  assert(heap->data[0] == 3);
-
-  int item = 0;
-  int error = pop(heap, &item);
-  assert(item == 3);
-  assert(error == 0);
-  error = pop(heap, &item);
-  assert(item == 1);
-  assert(error == 0);
-  error = pop(heap, &item);
-  assert(item == 1);
-  assert(error == 1);
+  push(heap, 5);
+  assert(heap->length == 3);
+  assert(heap->capacity == 5);
+  int key = 0;
+  assert(pop(heap, &key));
+  assert(key == 5);
   free_heap(heap);
+}
+void test_pop() {
+  Heap *heap = new_heap(5);
+  push(heap, 3);
+  push(heap, 1);
+  push(heap, 5);
+  int key = 0;
+
+  assert(pop(heap, &key));
+  assert(heap->length == 2);
+  assert(key == 5);
+
+  assert(pop(heap, &key));
+  assert(heap->length == 1);
+  assert(key == 3);
+
+  assert(pop(heap, &key));
+  assert(heap->length == 0);
+  assert(key == 1);
+
+  assert(!pop(heap, &key));
+  free_heap(heap);
+}
+
+int main() {
+  test_push();
+  test_pop();
   return 0;
 }
